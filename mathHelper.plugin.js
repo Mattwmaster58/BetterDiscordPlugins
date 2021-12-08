@@ -1,4 +1,4 @@
-//META{"name":"Math Helper","displayName":"Math Helper","website":"https://github.com/Mattwmaster58/BetterDiscordPlugins","source":"https://raw.githubusercontent.com/planetarian/BetterDiscordPlugins/master/MathHelper.plugin.js"}*//
+//META{"name":"mathHelper","displayName":"Math Helper","website":"https://github.com/Mattwmaster58/BetterDiscordPlugins","source":"https://raw.githubusercontent.com/planetarian/BetterDiscordPlugins/master/MathHelper.plugin.js"}*//
 /*@cc_on
 @if (@_jscript)
 	// Offer to self-install for clueless users that try to run this directly.
@@ -22,154 +22,192 @@
 
 @else@*/
 
-let MathHelper = (() => {
+let mathHelper = (() => {
   const config = {
-    "info": {
-      "name": "Math Helper",
-      "authors": [{
-        "name": "Mattwmaster58",
-        "github_username": "Mattwmaster58",
-      }],
-      "version": "0.0.1",
-      "description": "",
-      "github": "https://github.com/Mattwmaster58/BetterDiscordPlugins",
-      "github_raw": "https://raw.githubusercontent.com/Mattwmaster58/BetterDiscordPlugins/master/mathHelper.plugin.js"
+    info: {
+      name: "Math Helper",
+      authors: [
+        {
+          name: "Mattwmaster58",
+          discord_id: "eatshit",
+          github_username: "Mattwmaster58",
+        },
+      ],
+      version: "0.0.1",
+      description: "",
+      github: "https://github.com/Mattwmaster58/BetterDiscordPlugins",
+      github_raw: "https://raw.githubusercontent.com/Mattwmaster58/BetterDiscordPlugins/master/mathHelper.plugin.js",
     },
-    "changelog": [],
-    "main": "index.js"
+    changelog: [],
+    main: "index.js",
   };
 
-  return !global.ZeresPluginLibrary ? class {
-    constructor() {
-      this._config = config;
-    }
-
-    getName() {
-      return config.info.name;
-    }
-
-    getAuthor() {
-      return config.info.authors.map(a => a.name).join(", ");
-    }
-
-    getDescription() {
-      return config.info.description;
-    }
-
-    getVersion() {
-      return config.info.version;
-    }
-
-    load() {
-      const title = "Library Missing";
-      const ModalStack = BdApi.findModuleByProps("push", "update", "pop", "popWithKey");
-      const TextElement = BdApi.findModuleByProps("Sizes", "Weights");
-      const ConfirmationModal = BdApi.findModule(m => m.defaultProps && m.key && m.key() === "confirm-modal");
-      if (!ModalStack || !ConfirmationModal || !TextElement) return BdApi.alert(title, `The library plugin needed for ${config.info.name} is missing.<br /><br /> <a href="https://betterdiscord.net/ghdl?url=https://raw.githubusercontent.com/rauenzi/BDPluginLibrary/master/release/0PluginLibrary.plugin.js" target="_blank">Click here to download the library!</a>`);
-      ModalStack.push(function (props) {
-        return BdApi.React.createElement(ConfirmationModal, Object.assign({
-          header: title,
-          children: [BdApi.React.createElement(TextElement, {
-            color: TextElement.Colors.PRIMARY,
-            children: [`The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`]
-          })],
-          red: false,
-          confirmText: "Download Now",
-          cancelText: "Cancel",
-          onConfirm: () => {
-            require("request").get("https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js", async (error, response, body) => {
-              if (error) return require("electron").shell.openExternal("https://betterdiscord.net/ghdl?url=https://raw.githubusercontent.com/rauenzi/BDPluginLibrary/master/release/0PluginLibrary.plugin.js");
-              await new Promise(r => require("fs").writeFile(require("path").join(ContentManager.pluginsFolder, "0PluginLibrary.plugin.js"), body, r));
-            });
-          }
-        }, props));
-      });
-    }
-
-    start() {
-    }
-
-    stop() {
-    }
-  } : (([Plugin, Api]) => {
-    const plugin = (Plugin, Library) => {
-
-      const {Logger, DiscordModules, Patcher, Settings} = Library;
-
-      return class MathHelper extends Plugin {
+  return !global.ZeresPluginLibrary
+    ? class {
         constructor() {
-          super();
-          this.upperSmallCharMap = {"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","a":"ᵃ","b":"ᵇ","c":"ᶜ","d":"ᵈ","e":"ᵉ","f":"ᶠ","g":"ᵍ","h":"ʰ","i":"ⁱ","j":"ʲ","k":"ᵏ","l":"ˡ","m":"ᵐ","n":"ⁿ","o":"ᵒ","p":"ᵖ","q":"q","r":"ʳ","s":"ˢ","t":"ᵗ","u":"ᵘ","v":"ᵛ","w":"ʷ","x":"ˣ","y":"ʸ","z":"ᶻ","A":"ᴬ","B":"ᴮ","C":"ᶜ","D":"ᴰ","E":"ᴱ","F":"ᶠ","G":"ᴳ","H":"ᴴ","I":"ᴵ","J":"ᴶ","K":"ᴷ","L":"ᴸ","M":"ᴹ","N":"ᴺ","O":"ᴼ","P":"ᴾ","Q":"Q","R":"ᴿ","S":"ˢ","T":"ᵀ","U":"ᵁ","V":"ⱽ","W":"ᵂ","X":"ˣ","Y":"ʸ","Z":"ᶻ","+":"⁺","-":"⁻","=":"⁼","(":"⁽",")":"⁾"};
-
-          this.defaultSettings = {
-
-          };
+          this._config = config;
         }
 
-        onStart() {
-          Logger.log("Started patching sendMessage");
+        getName() {
+          return config.info.name;
+        }
 
-          Patcher.before(DiscordModules.MessageActions, "sendMessage", (t, a) => {
-            let content = a[1].content;
-            const trivialMathMatcher = /(\d+)((_\d+)|)?(\^\d+)?/gmi
-            if (trivialMathMatcher.test(content)) {
-              content = content.replace(regex, this.doTransform.bind(this));
-              if (content.length > 2000) {
-                PluginUtilities.showToast("This message would exceed the 2000-character limit.\nReduce corruption amount or shorten text.\n\nLength including corruption: " + content.length, {type: 'error'});
-                return;
-              }
-            } if (trivialMathMatcher.test()) {
+        getAuthor() {
+          return config.info.authors.map((a) => a.name).join(", ");
+        }
 
-            }
+        getDescription() {
+          return config.info.description;
+        }
 
+        getVersion() {
+          return config.info.version;
+        }
+
+        load() {
+          const title = "Library Missing";
+          const ModalStack = BdApi.findModuleByProps("push", "update", "pop", "popWithKey");
+          const TextElement = BdApi.findModuleByProps("Sizes", "Weights");
+          const ConfirmationModal = BdApi.findModule((m) => m.defaultProps && m.key && m.key() === "confirm-modal");
+          if (!ModalStack || !ConfirmationModal || !TextElement)
+            return BdApi.alert(
+              title,
+              `The library plugin needed for ${config.info.name} is missing.<br /><br /> <a href="https://betterdiscord.net/ghdl?url=https://raw.githubusercontent.com/rauenzi/BDPluginLibrary/master/release/0PluginLibrary.plugin.js" target="_blank">Click here to download the library!</a>`
+            );
+          ModalStack.push(function (props) {
+            return BdApi.React.createElement(
+              ConfirmationModal,
+              Object.assign(
+                {
+                  header: title,
+                  children: [
+                    BdApi.React.createElement(TextElement, {
+                      color: TextElement.Colors.PRIMARY,
+                      children: [
+                        `The library plugin needed for ${config.info.name} is missing. Please click Download Now to install it.`,
+                      ],
+                    }),
+                  ],
+                  red: false,
+                  confirmText: "Download Now",
+                  cancelText: "Cancel",
+                  onConfirm: () => {
+                    require("request").get(
+                      "https://rauenzi.github.io/BDPluginLibrary/release/0PluginLibrary.plugin.js",
+                      async (error, response, body) => {
+                        if (error)
+                          return require("electron").shell.openExternal(
+                            "https://betterdiscord.net/ghdl?url=https://raw.githubusercontent.com/rauenzi/BDPluginLibrary/master/release/0PluginLibrary.plugin.js"
+                          );
+                        await new Promise((r) =>
+                          require("fs").writeFile(
+                            require("path").join(ContentManager.pluginsFolder, "0PluginLibrary.plugin.js"),
+                            body,
+                            r
+                          )
+                        );
+                      }
+                    );
+                  },
+                },
+                props
+              )
+            );
           });
         }
 
-        onStop() {
-          /// Using patch method for now
-          //let textArea = this.getChatTextArea();
-          //if (textArea) textArea.off("keydown.MathHelper");
-          Patcher.unpatchAll();
-          Logger.log("Stopped");
-        }
+        start() {}
 
-        getSettingsPanel() {
-          return Settings.SettingPanel.build(this.saveSettings.bind(this),
-            new Settings.SettingGroup("MathHelper Settings", {collapsible: false, shown: true}).append(
-              new Settings.Slider("Corruption amount", "Adjusts how corrupted your text becomes",
-                0.05, 3.0, this.settings.corruptionAmount, (e) => {
-                  this.settings.corruptionAmount = e;
-                }),
-              new Settings.Slider("Ramp end position", "Adjusts the endpoint of the ramp-in when using the `r` prefix",
-                0.05, 1.0, this.settings.rampEnd, e => {
-                  this.settings.rampEnd = e;
-                }),
-              new Settings.Switch("Obscure text", "Determines whether MathHelper characters are placed over the text or beneath it (use the `o` or `b` prefixes to set this in-line)",
-                this.settings.corruptMid, e => {
-                  this.settings.corruptMid = e;
-                })
-            )
-          );
-        }
-
-        processTrivialSub(match, number, subscript_specifier, subscript, superscript_specifier, superscript) {
-          return number +
-        }
-
-        charMapSub(cMap, text) {
-          if (!text) {return "";}
-          let out = "";
-          for (let c of text.split("")) {
-            out += cMap[c] || cMap[c.toLowerCase()] || c;
-          }
-          return out;
-        }
+        stop() {}
       }
+    : (([Plugin, Api]) => {
+        const plugin = (Plugin, Library) => {
+          const { Logger, DiscordModules, Patcher, Settings } = Library;
 
+          return class MathHelper extends Plugin {
+            constructor() {
+              super();
+              // prettier-ignore
+              this.upperSmallCharMap = {0:"⁰",1:"¹",2:"²",3:"³",4:"⁴",5:"⁵",6:"⁶",7:"⁷",8:"⁸",9:"⁹",a:"ᵃ",b:"ᵇ",c:"ᶜ",d:"ᵈ",e:"ᵉ",f:"ᶠ",g:"ᵍ",h:"ʰ",i:"ⁱ",j:"ʲ",k:"ᵏ",l:"ˡ",m:"ᵐ",n:"ⁿ",o:"ᵒ",p:"ᵖ",q:"q",r:"ʳ",s:"ˢ",t:"ᵗ",u:"ᵘ",v:"ᵛ",w:"ʷ",x:"ˣ",y:"ʸ",z:"ᶻ",A:"ᴬ",B:"ᴮ",C:"ᶜ",D:"ᴰ",E:"ᴱ",F:"ᶠ",G:"ᴳ",H:"ᴴ",I:"ᴵ",J:"ᴶ",K:"ᴷ",L:"ᴸ",M:"ᴹ",N:"ᴺ",O:"ᴼ",P:"ᴾ",Q:"Q",R:"ᴿ",S:"ˢ",T:"ᵀ",U:"ᵁ",V:"ⱽ",W:"ᵂ",X:"ˣ",Y:"ʸ",Z:"ᶻ","+":"⁺","-":"⁻","=":"⁼","(":"⁽",")":"⁾"};
+              // prettier-ignore
+              this.lowerSmallCharMap = {"0":"₀","1":"₁","2":"₂","3":"₃","4":"₄","5":"₅","6":"₆","7":"₇","8":"₈","9":"₉","a":"ₐ","b":"b","e":"ₑ","f":"f","h":"ₕ","i":"ᵢ","j":"ⱼ","k":"ₖ","l":"ₗ","m":"ₘ","n":"ₙ","o":"ₒ","p":"ₚ","q":"q","r":"ᵣ","s":"ₛ","t":"ₜ","u":"ᵤ","v":"ᵥ","x":"ₓ","A":"ₐ","B":"B","C":"C","D":"D","E":"ₑ","F":"F","G":"G","H":"ₕ","I":"ᵢ","J":"ⱼ","K":"ₖ","L":"ₗ","M":"ₘ","N":"ₙ","O":"ₒ","P":"ₚ","Q":"Q","R":"ᵣ","S":"ₛ","T":"ₜ","U":"ᵤ","V":"ᵥ","W":"W","X":"ₓ","Y":"Y","Z":"Z","+":"₊","-":"₋","=":"₌","(":"₍",")":"₎", "y":"ᵧ", "z":"𝓏", "w":"𝓌", "c":"𝒸", "d":"𝒹", "g":"𝓰"};
+              this.defaultSettings = {};
+            }
 
+            onStart() {
+              Logger.log("Started patching sendMessage");
+              Patcher.before(DiscordModules.MessageActions, "sendMessage", (t, a) => {
+                let content = a[1].content;
+                // as the prophecy fortells, if these regexes are ever coalesced into one,
+                // they will never be able to be seperated by man, nor divine being, nor any incantation of git
+                const bracedExpressionMathMatcher = /([\da-z]+)(?:_{(.*)}\^{(.*)}|(?:_{(.*)}|\^{(.*)}))/gmi
+                const trivialMathMatcher = /([\da-z]+)(?:_(\d+)\^(\d+)|(?:_(\d+)|\^(\d+)))/gmi;
+                if (trivialMathMatcher.test(content)) {
+                  content = content.replace(trivialMathMatcher, this.processMathSub.bind(this));
+                }
+                if (bracedExpressionMathMatcher.test(content)) {
+                  content = content.replace(bracedExpressionMathMatcher, this.processMathSub.bind(this));
+                }
+                a[1].content = content;
+              });
+            }
 
-    };
-    return plugin(Plugin, Api);
-  })(global.ZeresPluginLibrary.buildPlugin(config));
+            onStop() {
+              /// Using patch method for now
+              //let textArea = this.getChatTextArea();
+              //if (textArea) textArea.off("keydown.MathHelper");
+              Patcher.unpatchAll();
+              Logger.log("Stopped");
+            }
+
+            getSettingsPanel() {
+              // return Settings.SettingPanel.build(
+              //   this.saveSettings.bind(this),
+              //   new Settings.SettingGroup("MathHelper Settings", {
+              //     collapsible: false,
+              //     shown: true,
+              //   }).append(
+              //     new Settings.Slider(
+              //       "Corruption amount",
+              //       "Adjusts how corrupted your text becomes",
+              //       0.05,
+              //       3.0,
+              //       this.settings.corruptionAmount,
+              //       (e) => {
+              //         this.settings.corruptionAmount = e;
+              //       }
+              //     ),
+              //     new Settings.Switch(
+              //       "Obscure text",
+              //       "Determines whether MathHelper characters are placed over the text or beneath it (use the `o` or `b` prefixes to set this in-line)",
+              //       this.settings.corruptMid,
+              //       (e) => {
+              //         this.settings.corruptMid = e;
+              //       }
+              //     )
+              //   )
+              // );
+            }
+
+            processMathSub(match, number, subscript, superscript, x_subcript, x_superscript) {
+              return number +
+                this.charMapSub(this.lowerSmallCharMap, x_subcript || subscript) +
+                this.charMapSub(this.upperSmallCharMap, x_superscript || superscript);
+            }
+
+            charMapSub(cMap, text) {
+              if (!text) {
+                return "";
+              }
+              let out = "";
+              for (let c of text.split("")) {
+                out += cMap[c] || cMap[c.toLowerCase()] || c;
+              }
+              return out;
+            }
+          };
+        };
+        return plugin(Plugin, Api);
+      })(global.ZeresPluginLibrary.buildPlugin(config));
 })();
 /*@end@*/
