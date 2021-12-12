@@ -29,7 +29,6 @@ let mathHelper = (() => {
       authors: [
         {
           name: "Mattwmaster58",
-          discord_id: "eatshit",
           github_username: "Mattwmaster58",
         },
       ],
@@ -131,7 +130,11 @@ let mathHelper = (() => {
               this.upperSmallCharMap = {0:"⁰",1:"¹",2:"²",3:"³",4:"⁴",5:"⁵",6:"⁶",7:"⁷",8:"⁸",9:"⁹",a:"ᵃ",b:"ᵇ",c:"ᶜ",d:"ᵈ",e:"ᵉ",f:"ᶠ",g:"ᵍ",h:"ʰ",i:"ⁱ",j:"ʲ",k:"ᵏ",l:"ˡ",m:"ᵐ",n:"ⁿ",o:"ᵒ",p:"ᵖ",q:"q",r:"ʳ",s:"ˢ",t:"ᵗ",u:"ᵘ",v:"ᵛ",w:"ʷ",x:"ˣ",y:"ʸ",z:"ᶻ",A:"ᴬ",B:"ᴮ",C:"ᶜ",D:"ᴰ",E:"ᴱ",F:"ᶠ",G:"ᴳ",H:"ᴴ",I:"ᴵ",J:"ᴶ",K:"ᴷ",L:"ᴸ",M:"ᴹ",N:"ᴺ",O:"ᴼ",P:"ᴾ",Q:"Q",R:"ᴿ",S:"ˢ",T:"ᵀ",U:"ᵁ",V:"ⱽ",W:"ᵂ",X:"ˣ",Y:"ʸ",Z:"ᶻ","+":"⁺","-":"⁻","=":"⁼","(":"⁽",")":"⁾"};
               // prettier-ignore
               this.lowerSmallCharMap = {"0":"₀","1":"₁","2":"₂","3":"₃","4":"₄","5":"₅","6":"₆","7":"₇","8":"₈","9":"₉","a":"ₐ","b":"b","e":"ₑ","f":"f","h":"ₕ","i":"ᵢ","j":"ⱼ","k":"ₖ","l":"ₗ","m":"ₘ","n":"ₙ","o":"ₒ","p":"ₚ","q":"q","r":"ᵣ","s":"ₛ","t":"ₜ","u":"ᵤ","v":"ᵥ","x":"ₓ","A":"ₐ","B":"B","C":"C","D":"D","E":"ₑ","F":"F","G":"G","H":"ₕ","I":"ᵢ","J":"ⱼ","K":"ₖ","L":"ₗ","M":"ₘ","N":"ₙ","O":"ₒ","P":"ₚ","Q":"Q","R":"ᵣ","S":"ₛ","T":"ₜ","U":"ᵤ","V":"ᵥ","W":"W","X":"ₓ","Y":"Y","Z":"Z","+":"₊","-":"₋","=":"₌","(":"₍",")":"₎", "y":"ᵧ", "z":"𝓏", "w":"𝓌", "c":"𝒸", "d":"𝒹", "g":"𝓰"};
-              this.defaultSettings = {};
+              this.defaultSettings = {
+                abcBase: true,
+                abcSubscript: true,
+                abcSuperscript: false,
+              };
             }
 
             onStart() {
@@ -142,51 +145,55 @@ let mathHelper = (() => {
                 // they will never be able to be seperated by man, nor divine being, nor any incantation of git
                 const bracedExpressionMathMatcher = /([\da-z]+)(?:_{(.*)}\^{(.*)}|(?:_{(.*)}|\^{(.*)}))/gmi
                 const trivialMathMatcher = /([\da-z]+)(?:_(\d+)\^(\d+)|(?:_(\d+)|\^(\d+)))/gmi;
+                let needToReassign = false;
                 if (trivialMathMatcher.test(content)) {
                   content = content.replace(trivialMathMatcher, this.processMathSub.bind(this));
+                  needToReassign = true;
                 }
                 if (bracedExpressionMathMatcher.test(content)) {
                   content = content.replace(bracedExpressionMathMatcher, this.processMathSub.bind(this));
+                  needToReassign = true;
                 }
-                a[1].content = content;
+                if (needToReassign) {a[1].content = content;}
               });
             }
 
             onStop() {
-              /// Using patch method for now
-              //let textArea = this.getChatTextArea();
-              //if (textArea) textArea.off("keydown.MathHelper");
               Patcher.unpatchAll();
-              Logger.log("Stopped");
+              Logger.log("Stopped patching sendMessage");
             }
 
             getSettingsPanel() {
-              // return Settings.SettingPanel.build(
-              //   this.saveSettings.bind(this),
-              //   new Settings.SettingGroup("MathHelper Settings", {
-              //     collapsible: false,
-              //     shown: true,
-              //   }).append(
-              //     new Settings.Slider(
-              //       "Corruption amount",
-              //       "Adjusts how corrupted your text becomes",
-              //       0.05,
-              //       3.0,
-              //       this.settings.corruptionAmount,
-              //       (e) => {
-              //         this.settings.corruptionAmount = e;
-              //       }
-              //     ),
-              //     new Settings.Switch(
-              //       "Obscure text",
-              //       "Determines whether MathHelper characters are placed over the text or beneath it (use the `o` or `b` prefixes to set this in-line)",
-              //       this.settings.corruptMid,
-              //       (e) => {
-              //         this.settings.corruptMid = e;
-              //       }
-              //     )
-              //   )
-              // );
+              return Settings.SettingPanel.build(
+                this.saveSettings.bind(this),
+                new Settings.SettingGroup("MathHelper Settings", {
+                  collapsible: false,
+                  shown: true,
+                }).append(
+                  new Settings.Switch(
+                    "Arbitrary base",
+                    "If on, the base of the expression may be any non-whitespace character." +
+                    " If off, the base may only be a number. " +
+                    "This setting applies to both inline and expanded forms (eg '5^{2}')",
+                    this.settings.abcBase,
+                    (e) => {this.settings.abcBase = e;}
+                  ),
+                  new Settings.Switch(
+                    "Arbitrary subscript",
+                  "If on, the subscript of the expression may be any non-whitespace character." +
+                    " If off, the subscript may only be a number",
+                    this.settings.abcSubscript,
+                    (e) => {this.settings.abcSubscript = e;}
+                  ),
+                  new Settings.Switch(
+                    "Arbitrary superscript",
+                  "If on, the superscript of the expression may be any non-whitespace character." +
+                    " If off, the superscript may only be a number",
+                    this.settings.abcSuperscript,
+                    (e) => {this.settings.abcSuperscript = e;}
+                  )
+                )
+              );
             }
 
             processMathSub(match, number, subscript, superscript, x_subcript, x_superscript) {
